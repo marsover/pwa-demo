@@ -88,7 +88,8 @@
         let deferredPrompt;
         const installBtn = document.createElement('button');
         installBtn.textContent = '📱 Установить приложение';
-        installBtn.style.position = 'fixed';
+        installBtn.style.display = 'block !important'; // Принудительно показать
+        //installBtn.style.position = 'fixed';
         installBtn.style.bottom = '20px';
         installBtn.style.left = '50%';
         installBtn.style.transform = 'translateX(-50%)';
