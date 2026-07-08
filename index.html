@@ -3,21 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <title>PWA Demo App</title>
-    <link rel="manifest" href="./manifest.webmanifest">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#4CAF50">
-    
+
     <script>
-        // Регистрация Service Worker
+        // 1. СОЗДАЁМ MANIFEST ПРОГРАММНО
+        (function() {
+            const manifest = {
+                "name": "PWA Demo App",
+                "short_name": "PWA Demo",
+                "description": "Простое PWA приложение",
+                "start_url": ".",
+                "display": "standalone",
+                "background_color": "#ffffff",
+                "theme_color": "#4CAF50",
+                "icons": [{
+                    "src": "data:image/svg+xml," + encodeURIComponent(`
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+                            <rect width="192" height="192" fill="#4CAF50" rx="32"/>
+                            <text x="96" y="120" font-family="Arial" font-size="80" fill="white" text-anchor="middle">P</text>
+                        </svg>
+                    `),
+                    "sizes": "192x192",
+                    "type": "image/svg+xml"
+                }, {
+                    "src": "data:image/svg+xml," + encodeURIComponent(`
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                            <rect width="512" height="512" fill="#4CAF50" rx="64"/>
+                            <text x="256" y="320" font-family="Arial" font-size="200" fill="white" text-anchor="middle">P</text>
+                        </svg>
+                    `),
+                    "sizes": "512x512",
+                    "type": "image/svg+xml",
+                    "purpose": "any maskable"
+                }]
+            };
+            const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+            const manifestURL = URL.createObjectURL(blob);
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = manifestURL;
+            document.head.appendChild(link);
+        })();
+
+        // 2. РЕГИСТРИРУЕМ SERVICE WORKER (ВСТРОЕННЫЙ)
         if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register('./serviceWorker.js');
+            const swCode = `
+                const CACHE_NAME = 'pwa-demo-v1';
+                const urlsToCache = ['.', 'index.html'];
+                self.addEventListener('install', event => {
+                    event.waitUntil(
+                        caches.open(CACHE_NAME)
+                            .then(cache => cache.addAll(urlsToCache))
+                    );
+                });
+                self.addEventListener('fetch', event => {
+                    event.respondWith(
+                        caches.match(event.request)
+                            .then(response => response || fetch(event.request))
+                    );
+                });
+                self.addEventListener('activate', event => {
+                    event.waitUntil(
+                        caches.keys().then(cacheNames => {
+                            return Promise.all(
+                                cacheNames.map(name => {
+                                    if (name !== CACHE_NAME) {
+                                        return caches.delete(name);
+                                    }
+                                })
+                            );
+                        })
+                    );
+                });
+            `;
+            const swBlob = new Blob([swCode], {type: 'application/javascript'});
+            const swURL = URL.createObjectURL(swBlob);
+            navigator.serviceWorker.register(swURL)
+                .then(() => console.log('✅ SW зарегистрирован'))
+                .catch(err => console.log('❌ Ошибка SW:', err));
         }
 
-        // 👇 Код для показа кнопки установки
+        // 3. КНОПКА УСТАНОВКИ (ВСЕГДА ВИДНА)
         let deferredPrompt;
         const installBtn = document.createElement('button');
         installBtn.textContent = '📱 Установить приложение';
-        installBtn.style.display = 'none';
         installBtn.style.position = 'fixed';
         installBtn.style.bottom = '20px';
         installBtn.style.left = '50%';
@@ -33,38 +103,34 @@
         installBtn.style.cursor = 'pointer';
         document.body.appendChild(installBtn);
 
-        // Слушаем событие beforeinstallprompt
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            installBtn.style.display = 'block';
+            console.log('✅ beforeinstallprompt сработал!');
         });
 
-        // Обработчик клика по кнопке
         installBtn.addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const result = await deferredPrompt.userChoice;
                 if (result.outcome === 'accepted') {
-                    console.log('Пользователь установил приложение');
                     installBtn.style.display = 'none';
-                } else {
-                    console.log('Пользователь отказался');
                 }
                 deferredPrompt = null;
+            } else {
+                alert('Чтобы установить приложение:\n1. Нажмите на три точки в браузере\n2. Выберите "Добавить на экран "Домой""');
             }
         });
 
-        // Скрываем кнопку, если приложение уже установлено
         window.addEventListener('appinstalled', () => {
             installBtn.style.display = 'none';
-            console.log('Приложение установлено!');
+            console.log('✅ PWA установлено!');
         });
     </script>
 </head>
 <body>
     <h1>Hello world</h1>
-    <p>Это PWA приложение. Нажмите "Установить" внизу!</p>
+    <p>Нажмите "Установить" внизу!</p>
     <style>
         body {
             font-family: Arial, sans-serif;
