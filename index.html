@@ -80,58 +80,14 @@
             const swBlob = new Blob([swCode], {type: 'application/javascript'});
             const swURL = URL.createObjectURL(swBlob);
             navigator.serviceWorker.register(swURL)
-                .then(() => console.log('✅ SW зарегистрирован'))
-                .catch(err => console.log('❌ Ошибка SW:', err));
+                .then(() => console.log('SW зарегистрирован'))
+                .catch(err => console.log('Ошибка SW:', err));
         }
-
-        // 3. КНОПКА УСТАНОВКИ (ВСЕГДА ВИДНА)
-        let deferredPrompt;
-        const installBtn = document.createElement('button');
-        installBtn.textContent = '📱 Установить приложение';
-        installBtn.style.display = 'block !important'; // Принудительно показать
-        //installBtn.style.position = 'fixed';
-        installBtn.style.bottom = '20px';
-        installBtn.style.left = '50%';
-        installBtn.style.transform = 'translateX(-50%)';
-        installBtn.style.padding = '15px 30px';
-        installBtn.style.fontSize = '18px';
-        installBtn.style.background = '#4CAF50';
-        installBtn.style.color = 'white';
-        installBtn.style.border = 'none';
-        installBtn.style.borderRadius = '30px';
-        installBtn.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
-        installBtn.style.zIndex = '1000';
-        installBtn.style.cursor = 'pointer';
-        document.body.appendChild(installBtn);
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            console.log('✅ beforeinstallprompt сработал!');
-        });
-
-        installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const result = await deferredPrompt.userChoice;
-                if (result.outcome === 'accepted') {
-                    installBtn.style.display = 'none';
-                }
-                deferredPrompt = null;
-            } else {
-                alert('Чтобы установить приложение:\n1. Нажмите на три точки в браузере\n2. Выберите "Добавить на экран "Домой""');
-            }
-        });
-
-        window.addEventListener('appinstalled', () => {
-            installBtn.style.display = 'none';
-            console.log('✅ PWA установлено!');
-        });
     </script>
 </head>
 <body>
     <h1>Hello world</h1>
-    <p>Нажмите "Установить его1" внизу!</p>
+    <p>Это моё PWA 😀. Установите его на устройство!</p>
     <style>
         body {
             font-family: Arial, sans-serif;
