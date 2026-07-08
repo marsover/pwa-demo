@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PWA Demo App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#4CAF50">
+    
+    <script>
+        // Создаём manifest программно
+        (function() {
+            const manifest = {
+                "name": "PWA Demo App",
+                "short_name": "PWA Demo",
+                "description": "Простое PWA приложение",
+                "start_url": ".",
+                "display": "standalone",
+                "background_color": "#ffffff",
+                "theme_color": "#4CAF50",
+                "icons": [
+                    {
+                        "src": "data:image/svg+xml," + encodeURIComponent(`
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+                                <rect width="192" height="192" fill="#4CAF50" rx="32"/>
+                                <text x="96" y="120" font-family="Arial" font-size="80" fill="white" text-anchor="middle">P</text>
+                            </svg>
+                        `),
+                        "sizes": "192x192",
+                        "type": "image/svg+xml"
+                    },
+                    {
+                        "src": "data:image/svg+xml," + encodeURIComponent(`
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                                <rect width="512" height="512" fill="#4CAF50" rx="64"/>
+                                <text x="256" y="320" font-family="Arial" font-size="200" fill="white" text-anchor="middle">P</text>
+                            </svg>
+                        `),
+                        "sizes": "512x512",
+                        "type": "image/svg+xml",
+                        "purpose": "any maskable"
+                    }
+                ]
+            };
+            
+            const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+            const manifestURL = URL.createObjectURL(blob);
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = manifestURL;
+            document.head.appendChild(link);
+        })();
+
+        // Service Worker с кешированием
+        if ("serviceWorker" in navigator) {
+            const swCode = `
+                const CACHE_NAME = 'pwa-demo-v1';
+                const urlsToCache = [
+                    '.',
+                    'index.html'
+                ];
+
+                self.addEventListener('install', event => {
+                    event.waitUntil(
+                        caches.open(CACHE_NAME)
+                            .then(cache => cache.addAll(urlsToCache))
+                    );
+                });
+
+                self.addEventListener('fetch', event => {
+                    event.respondWith(
+                        caches.match(event.request)
+                            .then(response => response || fetch(event.request))
+                    );
+                });
+
+                self.addEventListener('activate', event => {
+                    event.waitUntil(
+                        caches.keys().then(cacheNames => {
+                            return Promise.all(
+                                cacheNames.map(name => {
+                                    if (name !== CACHE_NAME) {
+                                        return caches.delete(name);
+                                    }
+                                })
+                            );
+                        })
+                    );
+                });
+            `;
+            
+            const swBlob = new Blob([swCode], {type: 'application/javascript'});
+            const swURL = URL.createObjectURL(swBlob);
+            
+            navigator.serviceWorker.register(swURL)
+                .then(() => console.log('Service Worker registered'))
+                .catch(err => console.log('SW registration failed:', err));
+        }
+    </script>
+</head>
+<body>
+    <h1>Hello world</h1>
+    <p>Это PWA приложение. Установите его на устройство!</p>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background: #f5f5f5;
+            margin: 0;
+        }
+        h1 {
+            color: #4CAF50;
+            margin-top: 40px;
+        }
+        p {
+            color: #333;
+            font-size: 18px;
+        }
+    </style>
+</body>
+</html>
